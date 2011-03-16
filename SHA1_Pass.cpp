@@ -16,8 +16,8 @@
 #include "../input_validation/valid_strings.hpp"
 
 // Pick One (Unix is Linux, Mac OS X and BSDs)
-//~ #define Unix
-#define Microsoft
+#define Unix
+//~ #define Microsoft
 
 // Crypto++
 #ifdef Unix
@@ -180,7 +180,7 @@ inline void gen_b64( Fl_Widget* w, void* buff )
 	
 	Fl_Text_Buffer *b = ( Fl_Text_Buffer* )buff;
 	const std::string temp = b64_passwd( sentence->value() );
-	const std::string password = Remove( temp, everything_but_spaces );
+	const std::string password = vs_remove( temp, trusted( everything_but_spaces ) );
 	b->text( password.c_str() );	
 	
 	// Copy password to clipboard so user only has to paste
