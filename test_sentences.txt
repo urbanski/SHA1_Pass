@@ -1,0 +1,10 @@
+0123456789
+abcdefghijklmnopqrstuvwxyz
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+~`!@#$%^&*()_+-={}|[]\\;':\",./<> ?
+A normal sentence.
+®©☢
+ÁÉÍÓÚÑÜáéíóúñü¿
+ÄäÖöÜüß€
+
+0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ~`!@#$%^&*()_+-={}|[]\\;':\",./<> ?A normal sentence.®©☢ÁÉÍÓÚÑÜáéíóúñü¿ÄäÖöÜüß€
