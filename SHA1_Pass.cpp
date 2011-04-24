@@ -1,6 +1,5 @@
 // Copyright (C) 2010-2011 "16 Systems" ® legal@16systems.com. All Rights Reserved.
 
-// Pick One
 #define Linux
 //#define Microsoft
 //#define Mac
@@ -29,6 +28,7 @@
 	#include "/wxwidgets-2.8.12/include/wx/aboutdlg.h"
 	#include "/wxwidgets-2.8.12/include/wx/textfile.h"
 
+	// Crypto++
 	#define CRYPTOPP_DEFAULT_NO_DLL
 	#include <dll.h>
 	#include <default.h>
@@ -72,37 +72,34 @@
 //#include "simplified_chinese.hpp"
 
 
-// Set to true for debugging/test builds
+bool half = false;
+
 const static bool SPDEBUG = false;
 const static bool SPTEST = false;
 
-
-// HMAC_SHA1
 bool HMAC_SHA1 = false;
 const static std::string HMAC_MSG = "SHA1_Pass";
 
 
-// std::string to wxString
 inline wxString std2wx( std::string s )
 {
-	return wxString( s.c_str(), wxConvUTF8 ); // May use wxConvLibc or wxConvLocal or wxConvUTF8 here.
+	return wxString( s.c_str(), wxConvUTF8 );
 }
 
 
-// wxString to std::string (unused)
 inline std::string wx2std( wxString s )
 {
 	return std::string( s.mb_str( wxConvUTF8 ) );
-} 
+}
 
 
-// Generate hex password from user provided sentence.
-const std::string hex_passwd( const std::string& sentence, const std::string& type )
+// Generate hex password from user provided input.
+const std::string hex_passwd( const std::string& input )
 {	
 	// SHA1
 	CryptoPP::SHA1 hash;
 	char digest[ hash.DigestSize() ];	
-	hash.Update((const byte*)sentence.c_str(), sentence.size());
+	hash.Update((const byte*)input.c_str(), input.size());
 	hash.Final( (byte*)digest );
 	
 	// SHA1 Encoding
@@ -115,10 +112,10 @@ const std::string hex_passwd( const std::string& sentence, const std::string& ty
 	// Lowercase
 	transform( hex.begin(), hex.end(), hex.begin(), (int(*)(int)) tolower );
 
-	// HMAC (Sentence is the secret key, string constant "SHA1_Pass" is the message)
+	// HMAC (User input is the secret key, string constant "SHA1_Pass" is the message)
 	CryptoPP::HMAC<CryptoPP::SHA1> mac;
 	char hmac[ hash.DigestSize() ];
-	mac.SetKey( (const byte*)sentence.c_str(), sentence.size() );
+	mac.SetKey( (const byte*)input.c_str(), input.size() );
 	mac.Update( (const byte*)HMAC_MSG.c_str(), HMAC_MSG.size() );
 	mac.Final( (byte*)hmac );
 
@@ -141,29 +138,29 @@ const std::string hex_passwd( const std::string& sentence, const std::string& ty
 	
 	if ( HMAC_SHA1 == true )	
 	{
-		if ( type == full )
-			return hmac_hex;
-		else
+		if ( half == true )
 			return hmac_hex.substr( 0, 20 );
+		else
+			return hmac_hex;
 	}
 
 	else
 	{
-		if ( type == full )
-			return hex;
-		else
+		if ( half == true )
 			return hex.substr( 0, 20 );
+		else
+			return hex;
 	}
 }
 
 
-// Generate b64 password from user provided sentence.
-const std::string b64_passwd( const std::string& sentence, const std::string& type )
+// Generate b64 password from user provided input.
+const std::string b64_passwd( const std::string& input )
 {
 	// SHA1
 	CryptoPP::SHA1 hash;
 	char digest[ hash.DigestSize() ];	
-	hash.Update((const byte*)sentence.c_str(), sentence.size());
+	hash.Update((const byte*)input.c_str(), input.size());
 	hash.Final( (byte*)digest );
 	
 	// SHA1 Encoding
@@ -173,10 +170,10 @@ const std::string b64_passwd( const std::string& sentence, const std::string& ty
 	b64encoder.Put( (byte*)digest, sizeof(digest) );
 	b64encoder.MessageEnd();
 	
-	// HMAC (Sentence is the secret key, string constant "SHA1_Pass" is the message)
+	// HMAC (User input is the secret key, string constant "SHA1_Pass" is the message)
 	CryptoPP::HMAC<CryptoPP::SHA1> mac;
 	char hmac[ hash.DigestSize() ];	
-	mac.SetKey( (const byte*)sentence.c_str(), sentence.size() );
+	mac.SetKey( (const byte*)input.c_str(), input.size() );
 	mac.Update( (const byte*)HMAC_MSG.c_str(), HMAC_MSG.size() );
 	mac.Final( (byte*)hmac );
 	
@@ -196,18 +193,18 @@ const std::string b64_passwd( const std::string& sentence, const std::string& ty
 	
 	if ( HMAC_SHA1 == true )
 	{
-		if ( type == full )
-			return hmac_b64;
-		else
+		if ( half == true )
 			return hmac_b64.substr( 0, 14 );
+		else
+			return hmac_b64;
 	}
 
 	else
 	{
-		if ( type == full )
-			return b64;
-		else
+		if ( half == true )
 			return b64.substr( 0, 14 );
+		else
+			return b64;
 	}
 }
 
@@ -234,12 +231,12 @@ void tests()
 	
 	for ( it = test_sentences.begin(); it != test_sentences.end(); ++it )
 	{
-		// Convert the sentence to UTF8
+		// Convert the input to UTF8
 		wxCharBuffer buffer = (*it).ToUTF8();
 	
 		// SHA1 and Encode, then return password
-		const std::string hex_1 = hex_passwd( buffer.data(), full );
-		const std::string b64_1 = b64_passwd( buffer.data(), full );
+		const std::string hex_1 = hex_passwd( buffer.data() );
+		const std::string b64_1 = b64_passwd( buffer.data() );
 	
 		// The password may only have trusted characters
 		const std::string hex_clean = vs_remove( hex_1, trusted( only_hex ) );
@@ -276,25 +273,26 @@ class MyFrame: public wxFrame
 		void OnBase64Half( wxCommandEvent& event );
 		void OnHex( wxCommandEvent& event );
 		void OnHexHalf( wxCommandEvent& event );
-		void OnViewSentence( wxCommandEvent& event );
+		void OnViewInput( wxCommandEvent& event );
 		void OnSecureMode( wxCommandEvent& event );
 		void OnHMAC( wxCommandEvent& event );
 		void OnHelp( wxCommandEvent& event );
 		void rbt_clear_cb();
-		void rbt_clear_s();
+		void rbt_clear_i();
 	
 		// The panel pointer (pointer rather than reference because the parent may be null)
 		wxPanel *panel;
 	
 		// TextCtrls
-		wxTextCtrl *textctrl;
-		wxTextCtrl partial_pass;	// This is read-only
+		wxTextCtrl *Sentence;
+		wxTextCtrl *Word;
+		wxTextCtrl partial_pass;	// This is read-only (Peek)
 	
 		// Static Text
 		wxStaticText sentence;
 	
 		// Check boxes
-		wxCheckBox view_sentence;
+		wxCheckBox view_input;
 		wxCheckBox secure_mode;
 		wxCheckBox hmac;
 	
@@ -315,7 +313,6 @@ class MyFrame: public wxFrame
 enum
 {
 	ID_Quit = 1,
-	ID_About,
 	ID_Base64,
 	ID_Base64Half,
 	ID_Hex,
@@ -334,9 +331,9 @@ EVT_MENU( ID_Base64, MyFrame::OnBase64 )
 EVT_MENU( ID_Base64Half, MyFrame::OnBase64Half )
 EVT_MENU( ID_Hex, MyFrame::OnHex )
 EVT_MENU( ID_HexHalf, MyFrame::OnHexHalf )
-EVT_MENU( ID_ViewSentence, MyFrame::OnViewSentence )
+EVT_MENU( ID_ViewSentence, MyFrame::OnViewInput )
 EVT_MENU( ID_SecureMode, MyFrame::OnSecureMode )
-EVT_MENU( ID_SecureMode, MyFrame::OnHMAC )
+EVT_MENU( ID_HMAC, MyFrame::OnHMAC )
 EVT_MENU( ID_Help, MyFrame::OnHelp )
 END_EVENT_TABLE()
 
@@ -346,8 +343,7 @@ IMPLEMENT_APP( MyApp )
 
 bool MyApp::OnInit()
 {
-	// The frame is the main window. 
-	
+	// The frame is the main window. 	
 	MyFrame *frame = new MyFrame( title, wxPoint( 50, 50 ), wxSize( 436,150 ), wxSYSTEM_MENU|wxMINIMIZE_BOX|wxCLOSE_BOX|wxCAPTION );
 	frame->Center( wxBOTH );
 	frame->Show( true );
@@ -369,15 +365,16 @@ bool MyApp::OnInit()
 MyFrame::MyFrame( const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( NULL, -1, title, pos, size, style )
 {
 	// The panel is within the frame
-	panel = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
+	panel = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	
-	// These controls are within the panel	
-	textctrl = new wxTextCtrl( panel, wxID_ANY, wxEmptyString, wxPoint( 69, 5 ), wxSize( 330, 25 ), wxTE_PASSWORD, wxDefaultValidator );
+	// The controls are within the panel
+	Sentence = new wxTextCtrl( panel, wxID_ANY, wxEmptyString, wxPoint( 69, 5 ), wxSize( 250, 25 ), wxTE_PASSWORD, wxDefaultValidator );
+	Word = new wxTextCtrl( panel, wxID_ANY, wxEmptyString, wxPoint( 325, 5 ), wxSize( 75, 25 ), wxTE_PASSWORD, wxDefaultValidator );
 	
 	sentence.Create( panel, wxID_ANY, u_sentence, wxPoint( 3, 8 ), wxDefaultSize, 0 );
 	
-	view_sentence.Create( panel, 3, vs, wxPoint( 69, 35 ), wxDefaultSize, 0, wxDefaultValidator );	
-	Connect( 3, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( MyFrame::OnViewSentence ) );
+	view_input.Create( panel, 3, vs, wxPoint( 69, 35 ), wxDefaultSize, 0, wxDefaultValidator );	
+	Connect( 3, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( MyFrame::OnViewInput ) );
 	
 	secure_mode.Create( panel, 4, sm, wxPoint( 194, 35 ), wxDefaultSize, 0, wxDefaultValidator );	
 	Connect( 4, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( MyFrame::OnSecureMode ) );
@@ -402,31 +399,27 @@ MyFrame::MyFrame( const wxString& title, const wxPoint& pos, const wxSize& size,
 	help.Create( panel, 11, help_label, wxPoint( 403, 5 ), wxSize( 25, 25), wxBU_EXACTFIT, wxDefaultValidator );	
 	Connect( 11, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( MyFrame::OnHelp ) );
 	
-	// On start-up, set partial_pass value
-	partial_pass.SetValue( pass_peek );
-	
-	// On start-up, do not View Sentence
-	view_sentence.SetValue( false );
-	
-	// On start-up, do not use Secure Mode
+	// On start-up, do these.
+	partial_pass.SetValue( pass_peek );	
 	secure_mode.SetValue( false );
-
-	// On start-up, do not use HMAC
+	view_input.SetValue( false );
 	hmac.SetValue( false );
+	Sentence->SetFocus();	
 	
 	// The 1 means only create one status field within the statusbar
 	CreateStatusBar( 1, wxFULL_REPAINT_ON_RESIZE, wxID_ANY );
 	SetStatusText( title );
 	
 	// Set Tool Tips
-	textctrl->SetToolTip( type_sentence_tip );
+	Sentence->SetToolTip( type_sentence_tip );
+	Word->SetToolTip( type_word_tip );
 	sentence.SetToolTip( type_sentence_tip );	
 	partial_pass.SetToolTip( pass_peek_tip );
 	HEX.SetToolTip( a_40_char_tip );
 	HEXH.SetToolTip( a_20_char_tip );
 	B64.SetToolTip( a_28_char_tip );
 	B64H.SetToolTip( a_14_char_tip );
-	view_sentence.SetToolTip( vs_tip );
+	view_input.SetToolTip( vs_tip );
 	secure_mode.SetToolTip( sm_tip );
 	hmac.SetToolTip( hmac_tip );
 	help.SetToolTip( help_tip );
@@ -441,51 +434,47 @@ MyFrame::MyFrame( const wxString& title, const wxPoint& pos, const wxSize& size,
 
 void MyFrame::rbt_clear_cb()
 {
-	// Clear the clip board.
 	wxTheClipboard->Clear();
 }
 
 
-void MyFrame::rbt_clear_s()
+void MyFrame::rbt_clear_i()
 {
-	// Clear the sentence.
-	textctrl->Clear();
-	
-	// Clear the viewable partial pass.
+	Word->Clear();	
+	Sentence->Clear();	
 	partial_pass.Clear();
 }
 
 
 void MyFrame::OnQuit( wxCommandEvent& WXUNUSED( event ) )
 {
-	// Call rbt_clear_s()
-	rbt_clear_s();
-	
-	// Call rbt_clear_cb()
+	rbt_clear_i();	
 	rbt_clear_cb();
-
-	// Close the app.
+	
 	Close( true );
 }
 
 
 void MyFrame::OnHelp( wxCommandEvent& WXUNUSED( event ) )
 {
-	// Show the About/Help Information
 	wxAboutBox( info );
 }
 
 
 void MyFrame::OnBase64( wxCommandEvent& WXUNUSED( event ) )
 {
-	// Get the sentence. Depending on the platform, this will have different Unicode encodings.
-	wxString the_sentence = textctrl->GetValue();
+	half = false;
 	
-	// Convert the sentence to UTF8
-	wxCharBuffer buffer = the_sentence.ToUTF8();
+	// Get the input Depending on the platform, this will have different Unicode encodings.
+	wxString the_sentence = Sentence->GetValue();
+	wxString the_word = Word->GetValue();
+	wxString the_input = the_sentence + the_word;
 	
-	// SHA1 the sentence.
-	const std::string temp_password = b64_passwd( buffer.data(), full );
+	// Convert the input to UTF8
+	wxCharBuffer buffer = the_input.ToUTF8();
+	
+	// SHA1 the input.
+	const std::string temp_password = b64_passwd( buffer.data() );
 	
 	// The password may only have base64 characters in it
 	const std::string clean_password = vs_remove( temp_password, trusted( only_base64 ) );
@@ -509,6 +498,8 @@ void MyFrame::OnBase64( wxCommandEvent& WXUNUSED( event ) )
 	if ( SPDEBUG == true )
 	{
 		wxMessageBox( the_sentence, u_sentence, wxOK | wxICON_INFORMATION, this);
+		wxMessageBox( the_word, u_word, wxOK | wxICON_INFORMATION, this);
+		wxMessageBox( the_input, u_input, wxOK | wxICON_INFORMATION, this);
 		wxMessageBox( the_password, password, wxOK | wxICON_INFORMATION, this);
 		
 		// Log password		
@@ -526,14 +517,18 @@ void MyFrame::OnBase64( wxCommandEvent& WXUNUSED( event ) )
 
 void MyFrame::OnBase64Half( wxCommandEvent& WXUNUSED( event ) )
 {
-	// Get the sentence. Depending on the platform, this will have different Unicode encodings.
-	wxString the_sentence = textctrl->GetValue();
+	half = true;
 	
-	// Convert the sentence to UTF8
-	wxCharBuffer buffer = the_sentence.ToUTF8();
+	// Get the input Depending on the platform, this will have different Unicode encodings.
+	wxString the_sentence = Sentence->GetValue();
+	wxString the_word = Word->GetValue();
+	wxString the_input = the_sentence + the_word;
 	
-	// SHA1 the sentence.
-	const std::string temp_password = b64_passwd( buffer.data(), half );
+	// Convert the input to UTF8
+	wxCharBuffer buffer = the_input.ToUTF8();
+	
+	// SHA1 the input.
+	const std::string temp_password = b64_passwd( buffer.data() );
 	
 	// The password may only have base64 characters in it
 	const std::string clean_password = vs_remove( temp_password, trusted( only_base64 ) );
@@ -557,6 +552,8 @@ void MyFrame::OnBase64Half( wxCommandEvent& WXUNUSED( event ) )
 	if ( SPDEBUG == true )
 	{
 		wxMessageBox( the_sentence, u_sentence, wxOK | wxICON_INFORMATION, this);
+		wxMessageBox( the_word, u_word, wxOK | wxICON_INFORMATION, this);
+		wxMessageBox( the_input, u_input, wxOK | wxICON_INFORMATION, this);
 		wxMessageBox( the_password, password, wxOK | wxICON_INFORMATION, this);
 		
 		// Log password		
@@ -574,14 +571,18 @@ void MyFrame::OnBase64Half( wxCommandEvent& WXUNUSED( event ) )
 
 void MyFrame::OnHex( wxCommandEvent& WXUNUSED( event ) )
 {
-	// Get the sentence. Depending on the platform, this will have different Unicode encodings.
-	wxString the_sentence = textctrl->GetValue();
+	half = false;
 	
-	// Convert the sentence to UTF8
-	wxCharBuffer buffer = the_sentence.ToUTF8();
+	// Get the input Depending on the platform, this will have different Unicode encodings.
+	wxString the_sentence = Sentence->GetValue();
+	wxString the_word = Word->GetValue();
+	wxString the_input = the_sentence + the_word;
 	
-	// SHA1 the sentence.
-	const std::string temp_password = hex_passwd( buffer.data(), full );
+	// Convert the input to UTF8
+	wxCharBuffer buffer = the_input.ToUTF8();
+	
+	// SHA1 the input.
+	const std::string temp_password = hex_passwd( buffer.data() );
 	
 	// The password may only have hex characters in it
 	const std::string clean_password = vs_remove( temp_password, trusted( only_hex ) );
@@ -605,6 +606,8 @@ void MyFrame::OnHex( wxCommandEvent& WXUNUSED( event ) )
 	if ( SPDEBUG == true )
 	{
 		wxMessageBox( the_sentence, u_sentence, wxOK | wxICON_INFORMATION, this);
+		wxMessageBox( the_word, u_word, wxOK | wxICON_INFORMATION, this);
+		wxMessageBox( the_input, u_input, wxOK | wxICON_INFORMATION, this);
 		wxMessageBox( the_password, password, wxOK | wxICON_INFORMATION, this);
 		
 		// Log password		
@@ -622,14 +625,18 @@ void MyFrame::OnHex( wxCommandEvent& WXUNUSED( event ) )
 
 void MyFrame::OnHexHalf( wxCommandEvent& WXUNUSED( event ) )
 {
-	// Get the sentence. Depending on the platform, this will have different Unicode encodings.
-	wxString the_sentence = textctrl->GetValue();
+	half = true;
 	
-	// Convert the sentence to UTF8
-	wxCharBuffer buffer = the_sentence.ToUTF8();
+	// Get the input Depending on the platform, this will have different Unicode encodings.
+	wxString the_sentence = Sentence->GetValue();
+	wxString the_word = Word->GetValue();
+	wxString the_input = the_sentence + the_word;
 	
-	// SHA1 the sentence.
-	const std::string temp_password = hex_passwd( buffer.data(), half );
+	// Convert the input to UTF8
+	wxCharBuffer buffer = the_input.ToUTF8();
+	
+	// SHA1 the input.
+	const std::string temp_password = hex_passwd( buffer.data() );
 	
 	// The password may only have hex characters in it
 	const std::string clean_password = vs_remove( temp_password, trusted( only_hex ) );
@@ -653,6 +660,8 @@ void MyFrame::OnHexHalf( wxCommandEvent& WXUNUSED( event ) )
 	if ( SPDEBUG == true )
 	{
 		wxMessageBox( the_sentence, u_sentence, wxOK | wxICON_INFORMATION, this);
+		wxMessageBox( the_word, u_word, wxOK | wxICON_INFORMATION, this);
+		wxMessageBox( the_input, u_input, wxOK | wxICON_INFORMATION, this);
 		wxMessageBox( the_password, password, wxOK | wxICON_INFORMATION, this);
 		
 		// Log password
@@ -668,19 +677,23 @@ void MyFrame::OnHexHalf( wxCommandEvent& WXUNUSED( event ) )
 }
 
 
-void MyFrame::OnViewSentence( wxCommandEvent& WXUNUSED( event ) )
+void MyFrame::OnViewInput( wxCommandEvent& WXUNUSED( event ) )
 {	
-	const wxString the_sentence = textctrl->GetValue();
+	const wxString the_sentence = Sentence->GetValue();
+	const wxString the_word = Word->GetValue();
 	
 	// View Sentence has been checked.
-	if ( view_sentence.IsChecked() )
+	if ( view_input.IsChecked() )
 	{
 		// Set to plaintext style
-		delete textctrl;
-		textctrl = new wxTextCtrl( panel, -1, the_sentence, wxPoint( 69, 5 ), wxSize( 330, 25 ), wxTE_LEFT, wxDefaultValidator );
+		delete Sentence;
+		delete Word;
+		Sentence = new wxTextCtrl( panel, wxID_ANY, the_sentence, wxPoint( 69, 5 ), wxSize( 250, 25 ), wxTE_LEFT, wxDefaultValidator );
+		Word = new wxTextCtrl( panel, wxID_ANY, the_word, wxPoint( 325, 5 ), wxSize( 75, 25 ), wxTE_LEFT, wxDefaultValidator );
 		
-		// Recreate tool tip
-		textctrl->SetToolTip( type_sentence_tip );
+		// Recreate tool tips
+		Sentence->SetToolTip( type_sentence_tip );
+		Word->SetToolTip( type_word_tip );
 		
 		// Set status bar text
 		SetStatusText( vs_on );
@@ -690,11 +703,14 @@ void MyFrame::OnViewSentence( wxCommandEvent& WXUNUSED( event ) )
 	else
 	{
 		// Set to password style
-		delete textctrl;
-		textctrl = new wxTextCtrl( panel, -1, the_sentence, wxPoint( 69, 5 ), wxSize( 330, 25 ), wxTE_PASSWORD, wxDefaultValidator );
+		delete Sentence;
+		delete Word;
+		Sentence = new wxTextCtrl( panel, wxID_ANY, the_sentence, wxPoint( 69, 5 ), wxSize( 250, 25 ), wxTE_PASSWORD, wxDefaultValidator );
+		Word = new wxTextCtrl( panel, wxID_ANY, the_word, wxPoint( 325, 5 ), wxSize( 75, 25 ), wxTE_PASSWORD, wxDefaultValidator );
 		
 		// Recreate tool tip
-		textctrl->SetToolTip( type_sentence_tip );
+		Sentence->SetToolTip( type_sentence_tip );
+		Word->SetToolTip( type_word_tip );
 		
 		// Set status bar text
 		SetStatusText( vs_off );
@@ -704,24 +720,27 @@ void MyFrame::OnViewSentence( wxCommandEvent& WXUNUSED( event ) )
 
 void MyFrame::OnSecureMode( wxCommandEvent& WXUNUSED( event ) )
 {	
-	// Get the sentence.
-	const wxString the_sentence = textctrl->GetValue();
+	const wxString the_sentence = Sentence->GetValue();
+	const wxString the_word = Word->GetValue();
 	
-	// Uncheck view_sentence.
-	view_sentence.SetValue( false );
+	// Uncheck view_input.
+	view_input.SetValue( false );
 	
 	// Secure Mode has been checked.
 	if ( secure_mode.IsChecked() )
 	{		
 		// Set to password style.
-		delete textctrl;
-		textctrl = new wxTextCtrl( panel, -1, the_sentence, wxPoint( 69, 5 ), wxSize( 330, 25 ), wxTE_PASSWORD, wxDefaultValidator );
+		delete Sentence;
+		delete Word;
+		Sentence = new wxTextCtrl( panel, wxID_ANY, the_sentence, wxPoint( 69, 5 ), wxSize( 250, 25 ), wxTE_PASSWORD, wxDefaultValidator );
+		Word = new wxTextCtrl( panel, wxID_ANY, the_word, wxPoint( 325, 5 ), wxSize( 75, 25 ), wxTE_PASSWORD, wxDefaultValidator );
 		
 		// Recreate tool tip
-		textctrl->SetToolTip( type_sentence_tip );
+		Sentence->SetToolTip( type_sentence_tip );
+		Word->SetToolTip( type_word_tip );
 
-		// Disable view_sentence.
-		view_sentence.Disable();
+		// Disable view_input.
+		view_input.Disable();
 		
 		// Set status bar text
 		SetStatusText( sm_on );
@@ -730,14 +749,14 @@ void MyFrame::OnSecureMode( wxCommandEvent& WXUNUSED( event ) )
 	// Secure Mode has been unchecked.
 	else
 	{
-		// Call rbt_clear_s()
-		rbt_clear_s();
+		// Call rbt_clear_i()
+		rbt_clear_i();
 		
 		// Call rbt_clear_cb()
 		rbt_clear_cb();
 		
-		// Enable view_sentence button.
-		view_sentence.Enable();
+		// Enable view_input button.
+		view_input.Enable();
 		
 		// Set status bar text
 		SetStatusText( sm_off );
@@ -750,14 +769,12 @@ void MyFrame::OnSecureMode( wxCommandEvent& WXUNUSED( event ) )
 
 void MyFrame::OnHMAC( wxCommandEvent& WXUNUSED( event ) )
 {
-	// HMAC has been checked.
 	if ( hmac.IsChecked() )
 	{
 		SetStatusText( hmac_on );
 		HMAC_SHA1 = true;
 	}
 
-	// HMAC has been unchecked.
 	else
 	{
 		SetStatusText( hmac_off );

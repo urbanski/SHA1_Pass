@@ -26,3 +26,10 @@ SHA1_Pass Change Log
 		* This advice came from sci.crypto (thanks Greg and KG)
 	Shorten PassPeek field to 4 chars rename it to "Peek".
 
+1.5 - (BETA3)
+	Enable tab control to allow users to tab between fields.
+	Set focus on sentence field at start-up so users may type right away.
+	Add Word field to accommodate most common use (Sentence with Word appended to the end).
+	Clarify tool-tips and interface wording.
+	Remove unneeded comments.
+
