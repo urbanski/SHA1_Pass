@@ -1,19 +1,22 @@
 Summary - Use SHA1 hashes generated from sentences as your passwords.
 
     * When authenticating, paste the password. There's no need to type it.
-    * Use different sentences to create different passwords.
-    * All you need to do is remember your sentences.
+    * Use different sentences and words to create different passwords.
 
 ----------------------------------------------
 
 Goals
 
-   * Focus on sentence based passwords.
-   * Generate passwords when needed. Do not store them.
-   * Generate passwords that have a measurable bit strength.
-   * Run locally on end-use devices. Do not run "in the cloud" or "in web browsers" or "on other people's servers".
-   * Use standard, secure hashing (SHA1) and be portable. SHA1_Pass must generate independently reproducible results.
-   * Use the ISC license to encourage others to use, modify and implement SHA1_Pass.
+   1. Focus on sentence based passwords.
+   2. Generate passwords when needed. Do not store them.
+   3. Generate passwords that have a measurable bit strength.
+   4. Run locally on end-use devices. Do not run "in the cloud" or "in web browsers" or "on other people's servers".
+   5. Use standard, secure hashing (SHA1) and be portable. SHA1_Pass must generate independently reproducible results.
+
+    Note: When calculating HMAC-SHA1, the HMAC key must be the user provided input (Sentence and Word) and the HMAC 
+    message must be the string constant "SHA1_Pass"
+
+   6. Use the ISC license to encourage others to use, modify and implement SHA1_Pass.
 
 ----------------------------------------------
 
@@ -44,8 +47,10 @@ Benefits of SHA1_Pass
 
 To reproduce SHA1_Pass results with OpenSSL
 
-    * echo -n 'Your Secret Sentence' | openssl dgst -sha1
-    * echo -n 'Your Secret Sentence' | openssl sha1 -binary | openssl base64
+    * echo -n 'Your Secret Sentence.your_secret_word' | openssl dgst -sha1
+    * echo -n 'Your Secret Sentence.your_secret_word' | openssl sha1 -binary | openssl base64
+    * echo -n SHA1_Pass | openssl dgst -sha1 -hmac 'Your Secret Sentence.your_secret_word'
+    * echo -n SHA1_Pass | openssl dgst -sha1 -binary -hmac 'Your Secret Sentence.your_secret_word' | openssl enc -base64
 
 ----------------------------------------------
 
