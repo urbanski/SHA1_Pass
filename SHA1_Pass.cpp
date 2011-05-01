@@ -1,4 +1,18 @@
-// Copyright (C) 2010-2011 "16 Systems" ® legal@16systems.com. All Rights Reserved.
+//~ Copyright (C) 2010-2011 "16 Systems" ® legal@16systems.com. All Rights Reserved.
+
+//~ SHA1_Pass is free software: you can redistribute it and/or modify
+//~ it under the terms of the GNU General Public License as published by
+//~ the Free Software Foundation, either version 3 of the License, or
+//~ (at your option) any later version.
+
+//~ SHA1_Pass is distributed in the hope that it will be useful,
+//~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+//~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//~ GNU General Public License for more details.
+
+//~ You should have received a copy of the GNU General Public License
+//~ along with SHA1_Pass.  If not, see <http://www.gnu.org/licenses/>.
+
 
 #define Linux
 //#define Microsoft
@@ -74,11 +88,44 @@
 
 bool half = false;
 
+
 const static bool SPDEBUG = false;
 const static bool SPTEST = false;
 
+
 bool HMAC_SHA1 = false;
 const static std::string HMAC_MSG = "SHA1_Pass";
+
+
+const std::vector<wxColour> Colors()
+{
+	const wxColour blue = wxColour( 0, 0, 255 );
+	const wxColour black = wxColour( 0, 0, 0 );
+	const wxColour green = wxColour( 0, 255, 0 );
+	const wxColour orange = wxColour( 255, 165, 0 );
+	const wxColour pink = wxColour( 255, 182, 193);
+	const wxColour red = wxColour( 255, 0, 0);
+	const wxColour sky = wxColour( 176, 226, 255 );
+	const wxColour yellow = wxColour( 255, 255, 0 );
+
+	std::vector<wxColour> colors;
+
+	colors.push_back( blue );
+	colors.push_back( black );
+	colors.push_back( green );
+	colors.push_back( orange );	
+	colors.push_back( red );
+	colors.push_back( yellow );
+
+	colors.push_back( pink );
+	colors.push_back( sky );
+
+	return colors;
+}
+
+
+const static std::vector<wxColour> C = Colors();
+static std::vector<wxColour>::const_iterator cit = C.begin();
 
 
 inline wxString std2wx( std::string s )
@@ -277,11 +324,13 @@ class MyFrame: public wxFrame
 		void OnSecureMode( wxCommandEvent& event );
 		void OnHMAC( wxCommandEvent& event );
 		void OnHelp( wxCommandEvent& event );
+		void OnColor( wxCommandEvent& event );
 		void rbt_clear_cb();
 		void rbt_clear_i();
 	
 		// The panel pointer (pointer rather than reference because the parent may be null)
 		wxPanel *panel;
+		wxPanel *color_panel;
 	
 		// TextCtrls
 		wxTextCtrl *Sentence;
@@ -290,18 +339,20 @@ class MyFrame: public wxFrame
 	
 		// Static Text
 		wxStaticText sentence;
-	
+		wxStaticText word;
+			
 		// Check boxes
 		wxCheckBox view_input;
 		wxCheckBox secure_mode;
 		wxCheckBox hmac;
 	
 		// Buttons
-		wxButton help;
 		wxButton B64;
 		wxButton B64H;
 		wxButton HEX;
 		wxButton HEXH;
+		wxButton help;
+		wxButton color;
 		
 		// About/Help Info
 		wxAboutDialogInfo info;		
@@ -320,7 +371,8 @@ enum
 	ID_ViewSentence,
 	ID_SecureMode,
 	ID_HMAC,
-	ID_Help
+	ID_Help,
+	ID_Color
 	
 };
 
@@ -335,6 +387,7 @@ EVT_MENU( ID_ViewSentence, MyFrame::OnViewInput )
 EVT_MENU( ID_SecureMode, MyFrame::OnSecureMode )
 EVT_MENU( ID_HMAC, MyFrame::OnHMAC )
 EVT_MENU( ID_Help, MyFrame::OnHelp )
+EVT_MENU( ID_Color, MyFrame::OnColor )
 END_EVENT_TABLE()
 
 
@@ -344,13 +397,13 @@ IMPLEMENT_APP( MyApp )
 bool MyApp::OnInit()
 {
 	// The frame is the main window. 	
-	MyFrame *frame = new MyFrame( title, wxPoint( 50, 50 ), wxSize( 436,150 ), wxSYSTEM_MENU|wxMINIMIZE_BOX|wxCLOSE_BOX|wxCAPTION );
+	MyFrame *frame = new MyFrame( title, wxPoint( 50, 50 ), wxSize( 441,150 ), wxSYSTEM_MENU|wxMINIMIZE_BOX|wxCLOSE_BOX|wxCAPTION );
 	frame->Center( wxBOTH );
 	frame->Show( true );
 	SetTopWindow( frame );
 	
 	// Disable shrinking window too small. minW, minH, maxW, maxH, incH
-	frame->SetSizeHints( 436,150, 436,150, 0 );
+	frame->SetSizeHints( 441,150, 441,150, 0 );
 	
 	// Run tests
 	if ( SPTEST == true )
@@ -366,17 +419,20 @@ MyFrame::MyFrame( const wxString& title, const wxPoint& pos, const wxSize& size,
 {
 	// The panel is within the frame
 	panel = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+
+	color_panel = new wxPanel( panel, wxID_ANY, wxPoint( 403, 62 ), wxSize( 30, 25) );
 	
 	// The controls are within the panel
-	Sentence = new wxTextCtrl( panel, wxID_ANY, wxEmptyString, wxPoint( 69, 5 ), wxSize( 250, 25 ), wxTE_PASSWORD, wxDefaultValidator );
+	Sentence = new wxTextCtrl( panel, wxID_ANY, wxEmptyString, wxPoint( 69, 5 ), wxSize( 210, 25 ), wxTE_PASSWORD, wxDefaultValidator );
 	Word = new wxTextCtrl( panel, wxID_ANY, wxEmptyString, wxPoint( 325, 5 ), wxSize( 75, 25 ), wxTE_PASSWORD, wxDefaultValidator );
 	
 	sentence.Create( panel, wxID_ANY, u_sentence, wxPoint( 3, 8 ), wxDefaultSize, 0 );
+	word.Create( panel, wxID_ANY, u_word, wxPoint( 285, 8 ), wxDefaultSize, 0 );
 	
 	view_input.Create( panel, 3, vs, wxPoint( 69, 35 ), wxDefaultSize, 0, wxDefaultValidator );	
 	Connect( 3, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( MyFrame::OnViewInput ) );
 	
-	secure_mode.Create( panel, 4, sm, wxPoint( 194, 35 ), wxDefaultSize, 0, wxDefaultValidator );	
+	secure_mode.Create( panel, 4, sm, wxPoint( 180, 35 ), wxDefaultSize, 0, wxDefaultValidator );	
 	Connect( 4, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( MyFrame::OnSecureMode ) );
 
 	hmac.Create( panel, 5, hm, wxPoint( 270, 35 ), wxDefaultSize, 0, wxDefaultValidator );	
@@ -396,8 +452,11 @@ MyFrame::MyFrame( const wxString& title, const wxPoint& pos, const wxSize& size,
 	B64H.Create( panel, 10, b64_half_label, wxPoint( 317, 62 ),  wxSize( 80, 25 ), wxBU_EXACTFIT, wxDefaultValidator );	
 	Connect( 10, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( MyFrame::OnBase64Half ) );
 	
-	help.Create( panel, 11, help_label, wxPoint( 403, 5 ), wxSize( 25, 25), wxBU_EXACTFIT, wxDefaultValidator );	
+	help.Create( panel, 11, help_label, wxPoint( 403, 5 ), wxSize( 30, 25), wxBU_EXACTFIT, wxDefaultValidator );	
 	Connect( 11, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( MyFrame::OnHelp ) );
+	
+	color.Create( panel, 12, color_label, wxPoint( 403, 33 ), wxSize( 30, 25), wxBU_EXACTFIT, wxDefaultValidator );	
+	Connect( 12, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( MyFrame::OnColor ) );
 	
 	// On start-up, do these.
 	partial_pass.SetValue( pass_peek );	
@@ -406,7 +465,7 @@ MyFrame::MyFrame( const wxString& title, const wxPoint& pos, const wxSize& size,
 	hmac.SetValue( false );
 	Sentence->SetFocus();	
 	
-	// The 1 means only create one status field within the statusbar
+	// The 1 means create one field within the statusbar
 	CreateStatusBar( 1, wxFULL_REPAINT_ON_RESIZE, wxID_ANY );
 	SetStatusText( title );
 	
@@ -414,6 +473,7 @@ MyFrame::MyFrame( const wxString& title, const wxPoint& pos, const wxSize& size,
 	Sentence->SetToolTip( type_sentence_tip );
 	Word->SetToolTip( type_word_tip );
 	sentence.SetToolTip( type_sentence_tip );	
+	word.SetToolTip( type_word_tip );
 	partial_pass.SetToolTip( pass_peek_tip );
 	HEX.SetToolTip( a_40_char_tip );
 	HEXH.SetToolTip( a_20_char_tip );
@@ -423,6 +483,7 @@ MyFrame::MyFrame( const wxString& title, const wxPoint& pos, const wxSize& size,
 	secure_mode.SetToolTip( sm_tip );
 	hmac.SetToolTip( hmac_tip );
 	help.SetToolTip( help_tip );
+	color.SetToolTip( color_tip );
 	
 	//Populate About Information
 	info.SetName( title );
@@ -452,6 +513,18 @@ void MyFrame::OnQuit( wxCommandEvent& WXUNUSED( event ) )
 	rbt_clear_cb();
 	
 	Close( true );
+}
+
+
+void MyFrame::OnColor( wxCommandEvent& WXUNUSED( event ) )
+{
+	if ( cit == C.end() )
+		cit = C.begin();
+	
+	color_panel->SetBackgroundColour( *cit );
+	color_panel->Refresh();
+	
+	++cit;
 }
 
 
@@ -688,7 +761,7 @@ void MyFrame::OnViewInput( wxCommandEvent& WXUNUSED( event ) )
 		// Set to plaintext style
 		delete Sentence;
 		delete Word;
-		Sentence = new wxTextCtrl( panel, wxID_ANY, the_sentence, wxPoint( 69, 5 ), wxSize( 250, 25 ), wxTE_LEFT, wxDefaultValidator );
+		Sentence = new wxTextCtrl( panel, wxID_ANY, the_sentence, wxPoint( 69, 5 ), wxSize( 210, 25 ), wxTE_LEFT, wxDefaultValidator );
 		Word = new wxTextCtrl( panel, wxID_ANY, the_word, wxPoint( 325, 5 ), wxSize( 75, 25 ), wxTE_LEFT, wxDefaultValidator );
 		
 		// Recreate tool tips
@@ -705,7 +778,7 @@ void MyFrame::OnViewInput( wxCommandEvent& WXUNUSED( event ) )
 		// Set to password style
 		delete Sentence;
 		delete Word;
-		Sentence = new wxTextCtrl( panel, wxID_ANY, the_sentence, wxPoint( 69, 5 ), wxSize( 250, 25 ), wxTE_PASSWORD, wxDefaultValidator );
+		Sentence = new wxTextCtrl( panel, wxID_ANY, the_sentence, wxPoint( 69, 5 ), wxSize( 210, 25 ), wxTE_PASSWORD, wxDefaultValidator );
 		Word = new wxTextCtrl( panel, wxID_ANY, the_word, wxPoint( 325, 5 ), wxSize( 75, 25 ), wxTE_PASSWORD, wxDefaultValidator );
 		
 		// Recreate tool tip
@@ -732,15 +805,18 @@ void MyFrame::OnSecureMode( wxCommandEvent& WXUNUSED( event ) )
 		// Set to password style.
 		delete Sentence;
 		delete Word;
-		Sentence = new wxTextCtrl( panel, wxID_ANY, the_sentence, wxPoint( 69, 5 ), wxSize( 250, 25 ), wxTE_PASSWORD, wxDefaultValidator );
+		Sentence = new wxTextCtrl( panel, wxID_ANY, the_sentence, wxPoint( 69, 5 ), wxSize( 210, 25 ), wxTE_PASSWORD, wxDefaultValidator );
 		Word = new wxTextCtrl( panel, wxID_ANY, the_word, wxPoint( 325, 5 ), wxSize( 75, 25 ), wxTE_PASSWORD, wxDefaultValidator );
 		
 		// Recreate tool tip
 		Sentence->SetToolTip( type_sentence_tip );
 		Word->SetToolTip( type_word_tip );
 
-		// Disable view_input.
+		// Disable view_input and color changing.
 		view_input.Disable();
+		view_input.SetToolTip( sm_v );
+		color.Disable();
+		color.SetToolTip( sm_c );
 		
 		// Set status bar text
 		SetStatusText( sm_on );
@@ -755,8 +831,11 @@ void MyFrame::OnSecureMode( wxCommandEvent& WXUNUSED( event ) )
 		// Call rbt_clear_cb()
 		rbt_clear_cb();
 		
-		// Enable view_input button.
+		// Enable view_input and color changing.
 		view_input.Enable();
+		view_input.SetToolTip( vs_tip );
+		color.Enable();
+		color.SetToolTip( color_tip );
 		
 		// Set status bar text
 		SetStatusText( sm_off );

@@ -16,7 +16,7 @@ Goals
     Note: When calculating HMAC-SHA1, the HMAC key must be the user provided input (Sentence and Word) and the HMAC 
     message must be the string constant "SHA1_Pass"
 
-   6. Use the ISC license to encourage others to use, modify and implement SHA1_Pass.
+   6. SHA1_Pass is free software. As of version 1.6, SHA1_Pass is distributed solely under the GPL license.
 
 ----------------------------------------------
 
@@ -38,7 +38,7 @@ Benefits of SHA1_Pass
 
     * SHA1_Pass has no advertisements, no malware, no spyware, no usage tracking, no snooping on what you do or what sites you visit.
     * SHA1_Pass is a self-contained program. You can download it and run it right away. There is nothing to install.
-    * SHA1_Pass is open source (ISC license). Written by 16 Systems/Brad Tilley (brad At 16s Dot us).
+    * SHA1_Pass is open source (GPL license). Written by 16 Systems/Brad Tilley (brad At 16s Dot us).
     * SHA1_Pass does not store passwords. There is nothing to protect or backup or reinstall.
     * Other software can reproduce SHA1_Pass results. There is no lock-in or secrets.
     * SHA1_Pass is portable. It runs on most any operating system.
@@ -56,6 +56,6 @@ To reproduce SHA1_Pass results with OpenSSL
 
 Note to developers: 
 
-	* When implementing SHA1_Pass, read the six goals (listed above) as a specification or list of requirements. 
+	* When implementing SHA1_Pass, read the six goals (listed above) as a list of requirements.
 
 END

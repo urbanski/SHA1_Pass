@@ -33,3 +33,7 @@ SHA1_Pass Change Log
 	Clarify tool-tips and interface wording.
 	Remove unneeded comments.
 
+1.6 - 	Add color differentiators for multiple instances of SHA1_Pass (work, personal, clients, etc.).
+	Change the license to GPL. As of version 1.6, SHA1_Pass will only be distributed under the GPL.
+	Further clarify labels and interface wording.
+
